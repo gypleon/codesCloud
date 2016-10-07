@@ -13,12 +13,12 @@ if __name__ == "__main__":
             cont = line.split(',')
             usr, mov, rat = int(cont[0]), cont[1], cont[2] 
             if usr != preusr:
-                usrinfos.append({'l':set(), 'u':set()})
+                usrinfos.append({'l':[], 'u':[]})
                 preusr = usr
             if float(rat) > 2.5:
-                usrinfos[usr-1]['l'].add(mov)
+                usrinfos[usr-1]['l'].append(mov)
             else:
-                usrinfos[usr-1]['u'].add(mov)
+                usrinfos[usr-1]['u'].append(mov)
     with open(usrlist, 'w') as f:
         for usrinfo in usrinfos:
             f.write("%s\n" % json.dumps(usrinfo))
