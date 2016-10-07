@@ -20,4 +20,5 @@ if __name__ == "__main__":
             else:
                 usrinfos[usr-1]['u'].append(mov)
     with open(usrlist, 'w') as f:
-        f.write("%s" % json.dumps(usrinfos))
+        for usrinfo in usrinfos:
+            f.write("%s\n" % json.dumps(usrinfo))
