@@ -8,20 +8,14 @@ def read_input(file):
         yield line.split(' ')
 
 def main():
-    ratinglist = list()
-    # get the amount of user in order to initiate the ratinglist
-    # logging.debug("datafile: %s", datafile)
-    # might read from HDFS with hdfslib, but i have no authority to install it
-    # with open('/home/1155081867/downloads/assignments/BD/ml-20m/likeorunlike.6743', 'r') as df:
-    #    df.seek(-50, 2)
-    #    useramount = int(df.readlines()[-1].split()[0])
-    useramount = 138493
-    for i in range(0, useramount+1):
-        ratinglist.append({'l':set(), 'u':set()})
-    # logging.debug("ratinglist length: %d, useramount: %d", len(ratinglist), useramount)
+    ratinglist = list([{'l':set(), 'u':set()}])
     data = read_input(sys.stdin)
+    preuserid = 0
     for content in data:
         userid = int(content[0])
+        if userid != preuserid:
+            preuserid = userid
+            ratinglist.append({'l':set(), 'u':set()})
         movieid = int(content[1])
         rating = content[2].strip('\n')
         # logging.debug("%d %d %s", userid, movieid, rating)
@@ -29,15 +23,30 @@ def main():
             ratinglist[userid]['l'].add(movieid)
         elif 'u' == rating:
             ratinglist[userid]['u'].add(movieid)
-    # logging.debug("ratinglist created, length: %d", len(ratinglist))
+    logging.debug("ratinglist created, length: %d", len(ratinglist))
+    sendthreshold = 1000
+    sendcount = 0
+    sendlist = list()
     for user1 in range(1, len(ratinglist)-1):
         for user2 in range(user1+1, len(ratinglist)):
-            # logging.debug("%2d-%2d", user1, user2)
-            predict = (len(ratinglist[user1]['l'])+len(ratinglist[user1]['u']))/(len(ratinglist[user2]['l'])+len(ratinglist[user2]['u']))
-            if predict < 0.9 or predict > 1.1:
+            logging.debug("%2d-%2d", user1, user2)
+            predict = float(len(ratinglist[user1]['l'])+len(ratinglist[user1]['u']))/(len(ratinglist[user2]['l'])+len(ratinglist[user2]['u']))
+            if predict < 0.95 or predict > 1.05:
+                continue
+            elif 0 == len(ratinglist[user1]['l'].intersection(ratinglist[user2]['l'])) and 0 == len(ratinglist[user1]['l'].intersection(ratinglist[user2]['l'])):
                 continue
             else:
-                print "%s:%s\t%s:%s:%s:%s" % (str(user1), str(user2), repr(ratinglist[user1]['l']), repr(ratinglist[user2]['l']), repr(ratinglist[user1]['u']), repr(ratinglist[user2]['u']))
+                # print "%d:%d\t%s:%s:%s:%s" % (user1, user2, repr(ratinglist[user1]['l']), repr(ratinglist[user2]['l']), repr(ratinglist[user1]['u']), repr(ratinglist[user2]['u']))
+                sendlist.append((user1, user2))
+                sendcount += 1
+                if sendcount >= sendthreshold:
+                    sendcount = 0
+                    sendstring = list()
+                    for userp in sendlist:
+                        sendstring.cat
+                    sendlist = []
+                    print sendstring
 
 if __name__ == "__main__":
+    logging.basicConfig(filename='mapper.log', filemode='w', level=logging.DEBUG)
     main()
