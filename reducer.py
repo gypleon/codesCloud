@@ -17,7 +17,7 @@ def load_usrinfos(jsonf):
     return usrinfos
 
 def main():
-    usrinfos = load_usrinfos("usrlist.test")
+    usrinfos = load_usrinfos("usrlist")
     mapout = read_mapper(sys.stdin)
     top100 = []
     for line in mapout:
@@ -45,7 +45,7 @@ def main():
                 top100.append([usr1, usr2, js])
             else:
                 top100.append([usr1, usr2, js])
-                sorted(top100, cmp = lambda x, y: y[2]-x[2])
+                top100 = sorted(top100, cmp = lambda x, y: int(y[2]*1000-x[2]*1000))
             if toplen > 100:
                 top100.pop()
             # print "%6d\t%6d\t%.2f" % (usr1, usr2, js)
