@@ -2,8 +2,7 @@
 
 import sys
 import json
-import bisect as bs
-import pydoop.hdfs as hdfs
+# import pydoop.hdfs as hdfs
 
 def read_mapper(mapout):
     for line in mapout:
@@ -20,12 +19,8 @@ def load_usrinfos(jsonf):
 def main():
     usrinfos = load_usrinfos("usrlist.test")
     mapout = read_mapper(sys.stdin)
-    # top100 = []
-    top100 = {}
+    top100 = []
     for line in mapout:
-        key = int(line[0])
-        if not top100.has_key(key):
-            top100[key] = []
         usrpair = line[1].split(':')
         usr1 = int(usrpair[0])
         usr2 = int(usrpair[1])
@@ -44,21 +39,18 @@ def main():
         else:
             # compute Jaccard Similarity
             js = round(float(len(u1inf['l'] & u2inf['l'] | (u1inf['u'] & u2inf['u']))) / len(u1inf['l'] | u2inf['l'] | u1inf['u'] | u2inf['u']), 2)
-            toplen = len(top100[key])
-            # optimization: maintain local top 100
+            toplen = len(top100)
+            # optimization: maintain local top 100 jaccards
             if 0 == toplen:
-                top100[key].append(js)
+                top100.append([usr1, usr2, js])
             else:
-                top100[key].reverse()
-                bs.insort_right(top100[key], js)
-                top100[key].reverse()
-            if toplen > 10:
-                top100[key].pop()
-                
-    # print "%d\t%s" % (key, ",".join(str(l) for l in top100))
-    for k, v in top100.iteritems():
-        print "%d\t%s" % (k, ",".join(str(l) for l in v))
-
+                top100.append([usr1, usr2, js])
+                sorted(top100, cmp = lambda x, y: y[2]-x[2])
+            if toplen > 100:
+                top100.pop()
+            # print "%6d\t%6d\t%.2f" % (usr1, usr2, js)
+    for u1u2 in top100:
+        print "%s\t%s\t%.2f" % (u1u2[0], u1u2[1], u1u2[2])
 
 if __name__ == "__main__":
     main()
