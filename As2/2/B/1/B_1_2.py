@@ -25,7 +25,7 @@ def newCentroids(clusters):
     return new_centroids
 
 def main(argv):
-    print('you can input initial CENTROIDS in format like:\npython3 B-1-2.py \"A7(1,1)|A8(1,2)|A10(7,2)|A11(7,5)\"\n')
+    print('you can input initial CENTROIDS in format like:\npython3 B-1-2.py \"A7(6,2)|A8(6,4)|A10(7,2)|A11(7,5)\"\n')
     # load raw data
     with open("points.txt") as f:
         rawpoints = f.readline().rstrip('\n').split('|')
