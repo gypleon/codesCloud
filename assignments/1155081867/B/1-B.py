@@ -30,47 +30,52 @@ def getPrimesLists( start, end ):
     return plist
 
 # find frequent itemsets, to be optimized: implemented in multi-round map-reduce
-def findFrequentItemsets( plist, cur, thrd ):
+def findFrequentItemsets( buckets, candset, cursize, thrd ):
+    # print(len(buckets), len(candset), cursize, thrd)
     filist = list()
-    if cur <= thrd:
-        fimat = list()
-        nplist = list()
-        ncplist = list()
-        for pset in plist:
-            # print(pset, cur)
-            lenpset = len(pset)
-            if lenpset >= cur:
-                if lenpset == cur:
-                    if len(fimat) == 0:
-                        fimat.append([pset, 1])
-                    else:
-                        existed = False
-                        for row in fimat:
-                            if row[0] == pset:
-                                row[1] += 1
-                                existed = True
-                                break
-                        if not existed:
-                            fimat.append([pset, 1])
-                else:
-                    ncplist.append(pset)
-                    for row in fimat:
-                        if row[0].issubset(pset):
-                            row[1] += 1
+    newcandset = list()
+    # count frequent item sets in current loop
+    for itemset in buckets:
+        if len(itemset) == cursize:
+            maybe = False
+            if len(candset) == 0:
+                maybe = True
+            else:
+                for cand in candset:
+                    if set(cand).issubset(set(itemset)):
+                        maybe = True
+            if maybe:
+                count = 0
+                for bucket in buckets:
+                    if set(itemset).issubset(set(bucket)):
+                        count += 1
+                        if count >= thrd:
+                            existed = False
+                            for check in filist:
+                                if itemset == check:
+                                    existed = True
+                                    break
+                            if not existed:
+                                filist.append(itemset)
                             break
-        # print(fimat, cur)
-        for row in fimat:
-            if row[1] >= thrd:
-                filist.append(row[0])
-        for npset in ncplist:
-            for fis in filist:
-                if fis.issubset(npset):
-                    nplist.append(npset)
-                    break
-        # print(filist)
-        fimat.clear()
-        ncplist.clear()
-        filist.extend( findFrequentItemsets(nplist, cur+1, thrd))
+    # construct candidate item sets for next loop
+    # print(filist)
+    for i in range(len(filist)-1):
+        for j in range(i+1, len(filist)):
+            cand = list(set(filist[i]).union(set(filist[j])))
+            if len(cand) == cursize+1:
+                existed = False
+                for check in newcandset:
+                    if cand == check:
+                        existed = True
+                        break
+                if not existed:
+                    newcandset.append(cand)
+    if len(newcandset) == 0:
+        return filist
+    # next loop
+    filist.extend(findFrequentItemsets( buckets, newcandset, cursize+1, thrd ))
+    # return current result
     return filist
 
 # sort frequent itemsets list & output
@@ -88,7 +93,7 @@ def sortFISandOutput( filist, outputfile ):
     # print(dtype, order)
     outlist = np.array(outlist, dtype = dtype)
     outlist.sort(order = order)
-    with open('./B.txt', 'w') as f:
+    with open(outputfile, 'w') as f:
         for out in outlist:
             # print(out)
             for i in out:
@@ -101,7 +106,7 @@ if __name__ == "__main__":
     end = 10000
     dimstart = 3
     threshold = 50
-    outputfile = './A.txt'
-    plist = getPrimesLists(start, end)
-    # print(plist)
-    sortFISandOutput( findFrequentItemsets(plist, dimstart, threshold), outputfile)
+    outputfile = './B.txt'
+    buckets = getPrimesLists(start, end)
+    sortFISandOutput( findFrequentItemsets(buckets, [], dimstart, threshold), outputfile)
+    # print( findFrequentItemsets(buckets, set([]), dimstart, threshold))
