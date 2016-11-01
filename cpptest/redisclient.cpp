@@ -7,15 +7,14 @@
 #include <cstring>
 
 #include "hiredis.h"
-// #include ""
 
 #define redisCmd(context, ...) static_cast<redisReply*>(redisCommand(context, __VA_ARGS__))
 
 int main(){
     redisContext *c;
     redisReply *reply;
-    const char *hostname = "127.0.0.1";
-    int port = 7002;
+    const char *hostname = "192.168.50.7";
+    int port = 6379;
     struct timeval timeout = { 1, 500000};
     c = redisConnectWithTimeout(hostname, port, timeout);
     reply = redisCmd(c, "CLUSTER NODES");
