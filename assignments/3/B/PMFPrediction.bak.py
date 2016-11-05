@@ -1,8 +1,8 @@
 #!/usr/bin/python
 #-*- coding:utf-8 -*-
 
-import pandas
 import numpy as np
+import pandas
 # import pickle
 
 class PMFPredictor:
@@ -24,10 +24,12 @@ class PMFPredictor:
     * save_latent_vectors
     """
     
-    def __init__(self, inputTrain, latent_d=1, verbose=True):
+    def __init__(self, inputTrain, latent_d=5):
         self.latent_d = latent_d
-        self.learning_rate = .0001 # alpha
-        self.regularization_strength = 0.1 # lambda
+        # initialize learning rate
+        self.learning_rate = .0001
+        # lambda
+        self.regularization_strength = 0.1
         
         self.ratings = np.array(self.loadData(inputTrain))
         self.converged = False
@@ -35,9 +37,8 @@ class PMFPredictor:
         self.num_users = int(np.max(self.ratings[:, 0]) + 1)
         self.num_items = int(np.max(self.ratings[:, 1]) + 1)
         
-        if verbose:
-            print (self.num_users, self.num_items, self.latent_d)
-            print self.ratings
+        print (self.num_users, self.num_items, self.latent_d)
+        print self.ratings
         
         self.users = np.random.random((self.num_users, self.latent_d))
         self.items = np.random.random((self.num_items, self.latent_d))
@@ -60,10 +61,10 @@ class PMFPredictor:
         return mylist
 
 
-    def likelihood(self, users=None, items=None):
-        if users is None:
+    def errorValue(self, users=None, items=None):
+        if None == users:
             users = self.users
-        if items is None:
+        if None == items:
             items = self.items
 
         # empirical risk term            
@@ -117,14 +118,14 @@ class PMFPredictor:
         # converge if likelihood changes by less than .1 or if learning rate goes below 1e-10
         # speed up by 1.25x if improving, slow down by 0.5x if not improving
         while (not self.converged):
-            initial_lik = self.likelihood()
+            initial_lik = self.errorValue()
             
-            print "  likelihood =", self.likelihood()
+            print "  likelihood =", self.errorValue()
             print "  setting learning rate =", self.learning_rate
             # apply updates to self.new_users and self.new_items
             self.try_updates(updates_o, updates_d)
             
-            final_lik = self.likelihood(self.new_users, self.new_items)
+            final_lik = self.errorValue(self.new_users, self.new_items)
             
             # if the new latent feature vectors are better, keep the updates, and increase the learning rate (i.e. momentum)
             if final_lik > initial_lik:
@@ -162,12 +163,10 @@ class PMFPredictor:
         
         for i in range(self.num_users):
             for d in range(self.latent_d):
-                self.new_users[i, d] = self.users[i, d] + \
-                                        alpha * (beta * self.users[i, d] + updates_o[i, d])
+                self.new_users[i, d] = self.users[i, d] + alpha * (beta * self.users[i, d] + updates_o[i, d])
         for i in range(self.num_items):
             for d in range(self.latent_d):
-                self.new_items[i, d] = self.items[i, d] + \
-                                        alpha * (beta * self.items[i, d] + updates_d[i, d])
+                self.new_items[i, d] = self.items[i, d] + alpha * (beta * self.items[i, d] + updates_d[i, d])
     
     
     def undo_updates(self):
@@ -202,14 +201,10 @@ if __name__ == "__main__":
     inputTrain = "./test_train.txt"
     outputPrediction = "./scores.txt"
     
-    myPredictor = PMFPredictor(inputTrain, latent_d=10)
+    # load data
+    myPredictor = PMFPredictor(inputTrain, latent_d=1)
     
-    liks = []
-    while (myPredictor.update()):
-        lik = myPredictor.likelihood()
-        liks.append(lik)
-        print "L=", lik
-        pass
+    myPredictor.update()
     
     myPredictor.print_latent_vectors()
-    myPredictor.save_latent_vectors()
+    # myPredictor.save_latent_vectors()
