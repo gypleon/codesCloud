@@ -88,7 +88,7 @@ class PMFPredictor:
         while (not self.converged):
             initial_lik = self.objectiveFunc()
             
-            print "[", time.ctime(), "]", "likelihood =", self.objectiveFunc(), "  setting learning rate =", self.learning_rate, "  lambda U M =", self.lambda_U, " ", self.lambda_M
+            print "[", time.ctime(), "]", "likelihood =", self.objectiveFunc(), "  rate =", self.learning_rate, "  lambda U M =", self.lambda_U, " ", self.lambda_M
             # apply updates to self.new_users and self.new_movies
             self.try_updates(updates_o, updates_d)
             
@@ -102,9 +102,9 @@ class PMFPredictor:
                     self.converged = True
             else:
                 self.learning_rate *= .5
-                self.undo_updates()
+                pass
             
-            if self.learning_rate < 1e-10:
+            if self.learning_rate <= 3e-5:
                 self.converged = True
         
         return not self.converged
@@ -138,10 +138,6 @@ class PMFPredictor:
         for i in range(self.num_movies):
             for d in range(self.latent_d):
                 self.new_movies[i, d] = self.movies[i, d] - self.learning_rate * (updates_d[i, d] + self.lambda_M * self.movies[i, d])
-    
-    
-    def undo_updates(self):
-        pass
     
     
     def print_latent_vectors(self):
