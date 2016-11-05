@@ -119,7 +119,7 @@ class PMFPredictor:
     def updates_test(self, updated_users, updated_movies):
         for rating_tuple in self.ratings:
             (i, j, rating) = rating_tuple
-            # r_hat is the predicted rating for user i on movie j
+            # estimated rating for user i on movie j
             r_hat = np.sum(self.users[i-1] * self.movies[j-1])
             # update each feature
             for d in range(self.num_features):
