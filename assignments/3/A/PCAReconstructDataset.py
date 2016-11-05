@@ -117,12 +117,11 @@ class PCAPredictor:
     def computeEigs(self):
         print "compute eigenvalues and eigenvectors"
         (eigvals, eigvecs) = np.linalg.eig(self.cov_matrix)
-        print eigvals, eigvecs, eigvals.shape, eigvecs.shape
-        for i in range(eigvals):
+        print eigvals.shape, eigvecs.shape
+        for i in range(len(eigvals)):
             self.eigs.append([eigvals[i], eigvecs[i]])
         # sort eigenvalues & eigenvectors
-        self.eigs.sort(reverse=True)
-        print self.eigs
+        sorted(self.eigs, key=lambda eigval:eigval[0], reverse=True)
 
     def reduceDimension(self, num_eigs):
         print "reduce dimensions with %d eigens" % num_eigs
@@ -139,12 +138,13 @@ class PCAPredictor:
         eig_matrix = np.matrix(eig_matrix)
         eig_matrix = eig_matrix.transpose()
         self.reduced_matrix = np.matrix(self.rating_matrix) * eig_matrix
-        print self.reduced_matrix, self.reduced_matrix.shape
-        exit()
+        print self.reduced_matrix.shape
 
     def predict(self, input_test):
         print "predict (reconstruct the rating matrix)"
-        # self.reconst_matrix = 
+        self.reconst_matrix = self.reduced_matrix * self.reduced_matrix.transpose()
+        print self.reconst_matrix, self.reconst_matrix.shape
+        self.reconst_matrix = np.array(self.reconst_matrix)
         with file(input_test, 'r') as f:
             for line in f.readlines():
                 (user, movie) = line.strip().split()
@@ -159,6 +159,7 @@ class PCAPredictor:
 def main():
     # configuration
     input_train = "../dataset/train.txt"
+    # input_train = "./testtrain.txt"
     input_test = "../dataset/test.txt"
     amount_of_eigs = [5, 20, 50]
     outputs = [ "./scores-%d.txt" % i for i in amount_of_eigs]
