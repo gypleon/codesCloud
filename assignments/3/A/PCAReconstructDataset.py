@@ -31,7 +31,9 @@ class PCAPredictor:
         self.cov_matrix = []
         self.reduced_matrix = []
         self.reconst_matrix = []
+        self.prediction = []
 
+    # TODO: this function is the core of PCA prediction
     def fillInMatrix(self):
         print "fill in matrix and center data"
         # initialize rating matrix
@@ -46,7 +48,7 @@ class PCAPredictor:
         for i in range(self.num_users):
             count += 1
             if count % 1000 == 0:
-                print 'user', time.ctime()
+                print 'computing user means %d' % count
             user_count = 0
             user_sum = 0
             for j in range(self.num_movies):
@@ -62,7 +64,7 @@ class PCAPredictor:
         for j in range(self.num_movies):
             count += 1
             if count % 1000 == 0:
-                print 'movie', time.ctime()
+                print 'computing movie means %d' % count
             movie_count = 0
             movie_sum = 0
             for i in range(self.num_users):
@@ -81,11 +83,11 @@ class PCAPredictor:
         for i in range(self.num_users):
             count += 1
             if count % 1000 == 0:
-                print 'fill', time.ctime()
+                print 'filling or centering data %d' % count
             for j in range(self.num_movies):
                 if 0 != self.rating_matrix[i][j]:
                     self.rating_matrix[i][j] -= (user_weight * user_means[i] + movie_weight * movie_means[j])
-        print self.rating_matrix
+        print self.rating_matrix, self.rating_matrix.shape
 
     # Wiberg's method for missing values
     # TODO: implement it later
@@ -104,39 +106,54 @@ class PCAPredictor:
             sigma.append(0)
             for i in range(self.num_users):
                 sigma[j] += (self.rating_matrix[i][j]**2)
-            sigma[j] = float(sigma[j]) / self.num_users
+            sigma[j] = np.sqrt(float(sigma[j]) / self.num_users)
         for j in range(self.num_movies):
             for i in range(self.num_users):
-                normalized_matrix[i][j] = self.rating_matrix[i][j] / sigma[j]
+                if sigma[j] != 0:
+                    normalized_matrix[i][j] = self.rating_matrix[i][j] / sigma[j]
         self.cov_matrix = np.cov(normalized_matrix, rowvar=0)
+        print self.cov_matrix.shape
 
     def computeEigs(self):
         print "compute eigenvalues and eigenvectors"
         (eigvals, eigvecs) = np.linalg.eig(self.cov_matrix)
+        print eigvals, eigvecs, eigvals.shape, eigvecs.shape
         for i in range(eigvals):
             self.eigs.append([eigvals[i], eigvecs[i]])
         # sort eigenvalues & eigenvectors
         self.eigs.sort(reverse=True)
+        print self.eigs
 
     def reduceDimension(self, num_eigs):
-        print "reduce dimensions"
+        print "reduce dimensions with %d eigens" % num_eigs
         eig_matrix = []
         for i in range(num_eigs):
-            eig_matrix.append(self.eigs[i][1])
+            sum_sq = 0
+            for j in self.eigs[i][1]:
+                sum_sq += j**2
+            norm = np.sqrt(sum_sq)
+            eigvec = []
+            for j in self.eigs[i][1]:
+                eigvec.append(j / norm)
+            eig_matrix.append(eigvec)
         eig_matrix = np.matrix(eig_matrix)
         eig_matrix = eig_matrix.transpose()
         self.reduced_matrix = np.matrix(self.rating_matrix) * eig_matrix
+        print self.reduced_matrix, self.reduced_matrix.shape
+        exit()
 
-    def predict(self):
-        print "predict"
-        self.reconst_matrix
-
-    def outputPrediction(self, input_test, output):
+    def predict(self, input_test):
+        print "predict (reconstruct the rating matrix)"
+        # self.reconst_matrix = 
         with file(input_test, 'r') as f:
             for line in f.readlines():
-                (user, movie) = line.split()
+                (user, movie) = line.strip().split()
+                self.prediction.append(self.reconst_matrix[int(user)-1][int(movie)-1])
+
+    def outputPrediction(self, output):
         with file(output, 'w') as f:
-            pass
+            for pred_rating in self.prediction:
+                f.write("%.3f\n" % pred_rating)
             
 
 def main():
@@ -144,7 +161,7 @@ def main():
     input_train = "../dataset/train.txt"
     input_test = "../dataset/test.txt"
     amount_of_eigs = [5, 20, 50]
-    output = "./scores-%d.txt" % (amount_of_eigs)
+    outputs = [ "./scores-%d.txt" % i for i in amount_of_eigs]
     # load train and test data
     myPredictor = PCAPredictor(input_train, amount_of_eigs)
     # construct original matrix with missing values
@@ -152,14 +169,17 @@ def main():
     myPredictor.fillInMatrix()
     # compute covariance
     myPredictor.covariance()
+    # compute eigenvalues & eigenvectors
+    myPredictor.computeEigs()
     # dimensionality reduction
     for num_eigs in amount_of_eigs:
         myPredictor.reduceDimension(num_eigs)
         # reconstruct rating matrix
-        myPredictor.predict()
+        myPredictor.predict(input_test)
 
     # generate prediction results
-    myPredictor.outputPrediction(input_test, output)
+    for output in outputs:
+        myPredictor.outputPrediction(output)
 
 if __name__ == "__main__":
     main()
