@@ -167,8 +167,8 @@ class PMFPredictor:
     
 if __name__ == "__main__":
     # configurations
-    # inputTrain = "./dataset/train.txt"
-    inputTrain = "./test_train.txt"
+    inputTrain = "../dataset/train.txt"
+    # inputTrain = "./test_train.txt"
     outputPrediction = "./scores.txt"
     
     # load data
