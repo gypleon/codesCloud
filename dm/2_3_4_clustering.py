@@ -9,6 +9,7 @@ class Clusterers:
         self._data_path = data_path
         self._points = list()
         self._clusters = list()
+        self._centroids = list()
         self.load_data()
 
     def load_data(self):
@@ -22,29 +23,65 @@ class Clusterers:
     ''' Following is implementation for K-means clustering '''
     def k_means(self, init_centroids):
         cent = init_centroids
-        print(self.mink_dist(cent[0], cent[1], 3))
+        # print(self.mink_dist(cent[0], cent[1], 3))
+        print("=============  (a) Euclidean  ==============")
+        self.k_means_train(init_centroids, self.eucl_dist)
+        print("=============  (b) Cityblock  ==============")
+        self.k_means_train(init_centroids, self.city_dist)
+        print("=============  (c) Minkovski  ==============")
+        self.k_means_train(init_centroids, self.mink_dist)
         return
 
     def k_means_train(self, init_cents, dist_m):
-        self._clusters = list()
-        for cent in init_cents:
-            self._clusters.append(cent)
         # num_clusters = len(init_cents)
-        pre_obj = self.k_means_obj_func(dist_m)
-        self.k_means_assign(init_cents, dist_m)
-        self.k_means_update(dist_m)
-        obj = self.k_means_obj_func(dist_m)
-        loss = abs(pre_obj - obj)
-        print(self.obj)
-        print(self._clusters)
+        self._centroids = list(init_cents)
+        self._clusters.clear()
+
+        loss = 1000
+        epoch = 0
+        while loss > 0:
+            epoch += 1
+            print("=============  epoch", epoch, "==============")
+            pre_obj = self.k_means_obj_func(dist_m)
+            # assign points
+            self.print_centroids()
+            self.k_means_assign(dist_m)
+            # update centroids
+            self.k_means_update()
+            self.print_clusters()
+            obj = self.k_means_obj_func(dist_m)
+            print("result of pre_obj func:", pre_obj)
+            print("result of obj func:", obj)
+            loss = abs(pre_obj - obj)
+            print("loss:", loss)
+        print("amount of epoch:", epoch)
+
         return self._clusters
 
-    def k_means_assign(self, cents, dist_m):
-        for 
+    def k_means_assign(self, dist_m):
+        cents = self._centroids
+        self._clusters = [np.zeros([0,2]) for i in range(len(cents))]
+        # for cent in cents:
+        #     self._clusters.append(np.array([cent]))
+        for point in self._points:
+            min_dist = 1000
+            min_ind = 0
+            for cent_ind in range(len(cents)):
+                dist = dist_m(point, cents[cent_ind])
+                if dist < min_dist:
+                    min_dist = dist
+                    min_ind = cent_ind
+            # print(point, self._clusters[min_ind][0], min_dist)
+            self._clusters[min_ind] = np.append(self._clusters[min_ind], np.array([point]), axis=0)
         return self._clusters
 
-    def k_means_update(self, dist_m):
-        return self._clusters
+    def k_means_update(self):
+        self._centroids.clear()
+        for clst in self._clusters:
+            # print(clst[1:])
+            self._centroids.append(np.average(clst[:], axis = 0))
+            # print(self._centroids)
+        return self._centroids
 
     def k_means_obj_func(self, dist_m):
         # res = 0
@@ -75,6 +112,7 @@ class Clusterers:
                 break
         print("after training:\n", centroids, "\nround: ", epoch)
         self._clusters = self.som_assign(self._points, centroids)
+        self.print_clusters()
 
         print("======================================")
 
@@ -96,6 +134,7 @@ class Clusterers:
                 break
         print("after training:\n", centroids, "\nround: ", epoch, ", a=", a, ", a_nb=", a_nb)
         self._clusters = self.som_assign(self._points, centroids)
+        self.print_clusters()
 
         return self._clusters
 
@@ -138,11 +177,6 @@ class Clusterers:
                     closest_cent = ind
             # print(closest_cent, min_dist)
             self._clusters[closest_cent] = np.append(self._clusters[closest_cent], np.array([example]), axis=0)
-        cluster_num = 0
-        for cluster in self._clusters:
-            cluster_num += 1
-            print("cluster", cluster_num)
-            print(cluster)
         return self._clusters
 
     # a special case of minkovski-distance with 2 as lambda 
@@ -167,7 +201,17 @@ class Clusterers:
         return self._clusters
 
     def print_clusters(self):
-        print(self._clusters)
+        cluster_num = 0
+        for cluster in self._clusters:
+            cluster_num += 1
+            print("cluster", cluster_num)
+            print(cluster)
+
+    def print_centroids(self):
+        cent_num = 0
+        for cent in self._centroids:
+            cent_num += 1
+            print("centroid", cent_num, ":", cent)
 
 def main():
     # configuration
