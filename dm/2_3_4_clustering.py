@@ -94,37 +94,123 @@ class Clusterers:
 
     ''' ################# Following is implementation for Hierarchical clustering ################# '''
     def hierarchical(self):
-        # print proximity matrix
-        orig_pdist = self.hier_pdist()
-        self.hier_show_prox_mat(self._points, orig_pdist, "Point-Point Proximity:", True, "p")
-        # self.hier_merge(self._points, self.hier_merge)
         self._clusters.clear()
+        # print pair-wise proximity matrix for original points
+        print("======================= a. initial proximity matrix & clusters =======================")
+        for point in self._points:
+            self._clusters.append(np.array([point]))
+        orig_pdist = self.hier_pdist()
+        self.hier_show_prox_mat(self._points, orig_pdist, "[Point-Point Proximities]", True, "p")
+        dists = self.hier_init_clusters(orig_pdist)
+        self.print_clusters()
+
+        # complete linkage
+        print("======================= b. complete linkage  =======================")
+        dists = self.hier_init_clusters(orig_pdist, self.hier_dist_complete)
+        self.hier_show_prox_mat(self._clusters, dists, "[Cluster-Cluster Proximities]", True)
+        while len(self._clusters)>1:
+            dists = self.hier_update(dists, self.hier_dist_complete)
+            self.hier_show_prox_mat(self._clusters, dists, "[Cluster-Cluster Proximities]", True)
+        self._clusters.clear()
+
+        # single linkage
+        print("======================= c. single linkage  =======================")
+        dists = self.hier_init_clusters(orig_pdist, self.hier_dist_single)
+        self.hier_show_prox_mat(self._clusters, dists, "[Cluster-Cluster Proximities]", True)
+        while len(self._clusters)>1:
+            dists = self.hier_update(dists, self.hier_dist_single)
+            self.hier_show_prox_mat(self._clusters, dists, "[Cluster-Cluster Proximities]", True)
+        self._clusters.clear()
+
+        # group average
+        print("======================= d. group average =======================")
+        dists = self.hier_init_clusters(orig_pdist, self.hier_dist_group)
+        self.hier_show_prox_mat(self._clusters, dists, "[Cluster-Cluster Proximities]", True)
+        while len(self._clusters)>1:
+            dists = self.hier_update(dists, self.hier_dist_group)
+            self.hier_show_prox_mat(self._clusters, dists, "[Cluster-Cluster Proximities]", True)
+        self._clusters.clear()
+
         return 
+
+    def hier_init_clusters(self, pdist, dist_m = None):
+        # initialize 5 separations (0-3, 4-7, 8-11, 12-15, 16-19)
+        self._clusters = [np.zeros([0,2]) for i in range(5)]
+        for clst_i in range(len(self._clusters)):
+            for p_i in range(clst_i * 4, clst_i * 4 + 4):
+                self._clusters[clst_i] = np.append(self._clusters[clst_i], np.array([self._points[p_i]]), axis=0)
+                # print(np.array([self._points[p_i]]))
+        if dist_m:
+            dists = dist_m(pdist)
+            return dists
+        return
+
+    def hier_update(self, dists, merge_m):
+        self.hier_merge(dists)
+        return merge_m(dists)
+
+    def hier_merge(self, dists):
+        # merge clusters based on a certain linkage method
+        min_ind = np.argmin(dists)
+        # self.print_clusters()
+        num_clst = len(self._clusters)
+        for clst_1 in range(num_clst-1):
+            for clst_2 in range(clst_1+1, num_clst):
+                if min_ind == self.hier_rcl(clst_1, clst_2, num_clst):
+                    print("[Notes] 'c%02d'" % clst_2, "will be merged into 'c%02d'" % clst_1)
+                    # found the closest cluster pair
+                    # print(clst_1, clst_2)
+                    clusters = list() 
+                    for clst_i in range(num_clst):
+                        if clst_i == clst_2:
+                            clusters[clst_1] = np.append(clusters[clst_1], self._clusters[clst_2], axis=0)
+                            continue
+                        clusters.append(self._clusters[clst_i])
+                    self._clusters = clusters
+                    break
+        # self.print_clusters()
+        return self._clusters
 
     def hier_pdist(self):
         return sd.pdist(self._points)
 
-    def hier_merge(self, cls1, cls2, merge_m):
-        # merge clusters based on a certain linkage method
-        return ()
+    def hier_dist_single(self, pdist):
+        clusters = self._clusters
+        dists = np.zeros([0])
+        for clst_1 in range(len(clusters)-1):
+            for clst_2 in range(clst_1 + 1, len(clusters)):
+                min_dist = np.min(sd.cdist(clusters[clst_1], clusters[clst_2]))
+                dists = np.append(dists, np.array([min_dist]))
+                # print(clst_1, clst_2, min_dist)
+        return dists
 
-    def hier_dist_single(self, clusters):
-        centroids = []
-        self.hier_show_prox_mat(centroids)
-        return
+    def hier_dist_complete(self, pdist):
+        clusters = self._clusters
+        dists = np.zeros([0])
+        for clst_1 in range(len(clusters)-1):
+            for clst_2 in range(clst_1 + 1, len(clusters)):
+                max_dist = np.max(sd.cdist(clusters[clst_1], clusters[clst_2]))
+                dists = np.append(dists, np.array([max_dist]))
+        return dists
 
-    def hier_dist_complete(self, clusters):
-        return
-
-    def hier_dist_group(self, clusters):
-        return
+    def hier_dist_group(self, pdist):
+        clusters = self._clusters
+        dists = np.zeros([0])
+        for clst_1 in range(len(clusters)-1):
+            for clst_2 in range(clst_1 + 1, len(clusters)):
+                avg_dist = np.average(sd.cdist(clusters[clst_1], clusters[clst_2]))
+                dists = np.append(dists, np.array([avg_dist]))
+        return dists
 
     def hier_show_prox_mat(self, clusters, pdist, title, if_print = False, label = 'c'):
         if if_print:
             num_p = len(clusters)
             # print table header
             print(title)
-            print("             ", end="")
+            if label == "p":
+                print("             ", end="")
+            else:
+                print("    ", end="")
             for i in range(num_p):
                 print(" %s%02d " % (label, i), end="")
             print()
@@ -132,7 +218,10 @@ class Clusterers:
             row = 0
             for i in sd.squareform(pdist):
                 col = 0
-                print("%s%02d[%.1f,%.1f] " % (label, row, clusters[row][0], clusters[row][1]), end="")
+                if label == "p":
+                    print("%s%02d[%.1f,%.1f] " % (label, row, clusters[row][0], clusters[row][1]), end="")
+                else:
+                    print("%s%02d " % (label, row), end="")
                 for j in i:
                     if row == col:
                         print("0.00 ", end="")
