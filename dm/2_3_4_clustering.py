@@ -2,6 +2,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.spatial import distance as sd
 
 
 class Clusterers:
@@ -20,7 +21,7 @@ class Clusterers:
                 self._points.append([float(point_str[0]), float(point_str[1])])
             self._points = np.array(self._points)
 
-    ''' Following is implementation for K-means clustering '''
+    ''' ################# Following is implementation for K-means clustering ################# '''
     def k_means(self, init_centroids):
         cent = init_centroids
         # print(self.mink_dist(cent[0], cent[1], 3))
@@ -91,11 +92,69 @@ class Clusterers:
         # return res
         return sum( sum(dist_m(self._clusters[clst_i][0], self._clusters[clst_i][i]) for i in range(1, len(self._clusters[clst_i]))) for clst_i in range(len(self._clusters)))
 
-    ''' Following is implementation for Hierarchical clustering '''
+    ''' ################# Following is implementation for Hierarchical clustering ################# '''
     def hierarchical(self):
+        # print proximity matrix
+        orig_pdist = self.hier_pdist()
+        self.hier_show_prox_mat(self._points, orig_pdist, "Point-Point Proximity:", True, "p")
+        # self.hier_merge(self._points, self.hier_merge)
+        self._clusters.clear()
         return 
 
-    ''' Following is implementation for SOM clustering '''
+    def hier_pdist(self):
+        return sd.pdist(self._points)
+
+    def hier_merge(self, cls1, cls2, merge_m):
+        # merge clusters based on a certain linkage method
+        return ()
+
+    def hier_dist_single(self, clusters):
+        centroids = []
+        self.hier_show_prox_mat(centroids)
+        return
+
+    def hier_dist_complete(self, clusters):
+        return
+
+    def hier_dist_group(self, clusters):
+        return
+
+    def hier_show_prox_mat(self, clusters, pdist, title, if_print = False, label = 'c'):
+        if if_print:
+            num_p = len(clusters)
+            # print table header
+            print(title)
+            print("             ", end="")
+            for i in range(num_p):
+                print(" %s%02d " % (label, i), end="")
+            print()
+            # print matrix
+            row = 0
+            for i in sd.squareform(pdist):
+                col = 0
+                print("%s%02d[%.1f,%.1f] " % (label, row, clusters[row][0], clusters[row][1]), end="")
+                for j in i:
+                    if row == col:
+                        print("0.00 ", end="")
+                    else: 
+                        print("%.2f " % pdist[self.hier_rcl(row,col,num_p)], end="")
+                        # if j == pdist[self.hier_rcl(row,col,num_p)]:
+                        #     print('true ', end="")
+                    col += 1
+                row += 1
+                print()
+        return pdist
+
+    # get dist from condensed pdist, based on #row, #col and len
+    def hier_rcl(self, i, j, l):
+        if i < j:
+            res = (i*(l-2)+j-i*(i-1)/2-1) 
+        elif i > j:
+            res = (j*(l-2)+i-j*(j-1)/2-1) 
+        # print(res)
+        return int(res)
+
+    ''' ################# Following is implementation for SOM clustering ################# '''
     def som(self, init_centroids, a = 0.3, a_nb = 0.2, size_nb = 3, loss_threshold = 1e-16, learning_rate_threshold = 1e-10):
         # self.display_points(init_centroids)
 
@@ -216,17 +275,19 @@ class Clusterers:
 def main():
     # configuration
     data_path = "./data_points"
-    init_centroids_som = np.array([[1, 3.1], [2, 2.2], [1.5, 2.1], [3.1, 1.1]])
-    init_centroids_kmeans = np.array([[1.8, 2.3], [2.3, 1.4]])
-    lambda_kmeans_mink = 3
     # create my clusterers
     my_clusterers = Clusterers(data_path)
+
     # run k-means
-    my_clusterers.k_means(init_centroids_kmeans)
+    init_centroids_kmeans = np.array([[1.8, 2.3], [2.3, 1.4]])
+    lambda_kmeans_mink = 3
+    # my_clusterers.k_means(init_centroids_kmeans)
 
     # run hierarchical
+    my_clusterers.hierarchical()
 
     # run som
+    init_centroids_som = np.array([[1, 3.1], [2, 2.2], [1.5, 2.1], [3.1, 1.1]])
     # my_clusterers.som(init_centroids_som)
 
 if __name__ == "__main__":
