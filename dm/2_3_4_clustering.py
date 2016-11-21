@@ -20,6 +20,7 @@ class Clusterers:
                 point_str = line.strip("\n").split("\t")
                 self._points.append([float(point_str[0]), float(point_str[1])])
             self._points = np.array(self._points)
+        # print(np.average(self._points, axis=0))
 
     ''' ################# Following is implementation for K-means clustering ################# '''
     def k_means(self, init_centroids):
@@ -97,16 +98,15 @@ class Clusterers:
         self._clusters.clear()
         # print pair-wise proximity matrix for original points
         print("======================= a. initial proximity matrix & clusters =======================")
-        for point in self._points:
-            self._clusters.append(np.array([point]))
-        orig_pdist = self.hier_pdist()
-        self.hier_show_prox_mat(self._points, orig_pdist, "[Point-Point Proximities]", True, "p")
-        dists = self.hier_init_clusters(orig_pdist)
+        pdist = self.hier_pdist()
+        self.hier_show_prox_mat(self._points, pdist, "[Point-Point Proximities]", True, "p")
+        dists = self.hier_init_clusters()
         self.print_clusters()
+        self._clusters.clear()
 
         # complete linkage
         print("======================= b. complete linkage  =======================")
-        dists = self.hier_init_clusters(orig_pdist, self.hier_dist_complete)
+        dists = self.hier_init_clusters(self.hier_dist_complete)
         self.hier_show_prox_mat(self._clusters, dists, "[Cluster-Cluster Proximities]", True)
         while len(self._clusters)>1:
             dists = self.hier_update(dists, self.hier_dist_complete)
@@ -115,7 +115,7 @@ class Clusterers:
 
         # single linkage
         print("======================= c. single linkage  =======================")
-        dists = self.hier_init_clusters(orig_pdist, self.hier_dist_single)
+        dists = self.hier_init_clusters(self.hier_dist_single)
         self.hier_show_prox_mat(self._clusters, dists, "[Cluster-Cluster Proximities]", True)
         while len(self._clusters)>1:
             dists = self.hier_update(dists, self.hier_dist_single)
@@ -124,7 +124,7 @@ class Clusterers:
 
         # group average
         print("======================= d. group average =======================")
-        dists = self.hier_init_clusters(orig_pdist, self.hier_dist_group)
+        dists = self.hier_init_clusters(self.hier_dist_group)
         self.hier_show_prox_mat(self._clusters, dists, "[Cluster-Cluster Proximities]", True)
         while len(self._clusters)>1:
             dists = self.hier_update(dists, self.hier_dist_group)
@@ -133,21 +133,31 @@ class Clusterers:
 
         return 
 
-    def hier_init_clusters(self, pdist, dist_m = None):
+    def hier_init_clusters(self, dist_m = None):
         # initialize 5 separations (0-3, 4-7, 8-11, 12-15, 16-19)
-        self._clusters = [np.zeros([0,2]) for i in range(5)]
-        for clst_i in range(len(self._clusters)):
-            for p_i in range(clst_i * 4, clst_i * 4 + 4):
-                self._clusters[clst_i] = np.append(self._clusters[clst_i], np.array([self._points[p_i]]), axis=0)
-                # print(np.array([self._points[p_i]]))
+        # self._clusters = [np.zeros([0,2]) for i in range(5)]
+        # for clst_i in range(len(self._clusters)):
+        #     for p_i in range(clst_i * 4, clst_i * 4 + 4):
+        #         self._clusters[clst_i] = np.append(self._clusters[clst_i], np.array([self._points[p_i]]), axis=0)
+        #         # print(np.array([self._points[p_i]]))
+
+        # initialize 5 separations using single-linkage
+        for point in self._points:
+            self._clusters.append(np.array([point]))
+        pdist = self.hier_pdist()
+        dists = self.hier_update(pdist, self.hier_dist_single)
+        while len(self._clusters) != 5:
+            dists = self.hier_update(dists, self.hier_dist_single)
         if dist_m:
-            dists = dist_m(pdist)
+            # dists = dist_m(pdist)
+            dists = dist_m()
             return dists
         return
 
     def hier_update(self, dists, merge_m):
         self.hier_merge(dists)
-        return merge_m(dists)
+        # return merge_m(dists)
+        return merge_m()
 
     def hier_merge(self, dists):
         # merge clusters based on a certain linkage method
@@ -174,7 +184,8 @@ class Clusterers:
     def hier_pdist(self):
         return sd.pdist(self._points)
 
-    def hier_dist_single(self, pdist):
+    # def hier_dist_single(self, pdist):
+    def hier_dist_single(self):
         clusters = self._clusters
         dists = np.zeros([0])
         for clst_1 in range(len(clusters)-1):
@@ -184,7 +195,8 @@ class Clusterers:
                 # print(clst_1, clst_2, min_dist)
         return dists
 
-    def hier_dist_complete(self, pdist):
+    # def hier_dist_complete(self, pdist):
+    def hier_dist_complete(self):
         clusters = self._clusters
         dists = np.zeros([0])
         for clst_1 in range(len(clusters)-1):
@@ -193,7 +205,8 @@ class Clusterers:
                 dists = np.append(dists, np.array([max_dist]))
         return dists
 
-    def hier_dist_group(self, pdist):
+    # def hier_dist_group(self, pdist):
+    def hier_dist_group(self):
         clusters = self._clusters
         dists = np.zeros([0])
         for clst_1 in range(len(clusters)-1):
@@ -247,6 +260,7 @@ class Clusterers:
     def som(self, init_centroids, a = 0.3, a_nb = 0.2, size_nb = 3, loss_threshold = 1e-16, learning_rate_threshold = 1e-10):
         # self.display_points(init_centroids)
 
+        self._clusters.clear()
         centroids = init_centroids
         print("[b] before training:\n", centroids)
         epoch = 0
@@ -373,7 +387,7 @@ def main():
     # my_clusterers.k_means(init_centroids_kmeans)
 
     # run hierarchical
-    my_clusterers.hierarchical()
+    # my_clusterers.hierarchical()
 
     # run som
     init_centroids_som = np.array([[1, 3.1], [2, 2.2], [1.5, 2.1], [3.1, 1.1]])

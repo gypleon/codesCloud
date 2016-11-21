@@ -26,7 +26,7 @@ def label_cores(points, eps, minpts):
             dist = get_dist(pdist, i, j, num_ps)
             if dist <= eps:
                 count += 1
-                if count > minpts:
+                if count >= minpts:
                     cores.append(points[i])
                     break
     return np.array(cores)
@@ -76,9 +76,22 @@ def direct_reach(r, points, eps):
     return np.array(r_nbs)
 
 # add neighbour core' neighbours
-def indirect_reach(c_nb, d_nbs, ind_nbs, points, cores, eps):
+def indirect_reach(c_nb, d_nbs, ind_nbs, points, cores, eps, checked_nbs = None):
     nbs = direct_reach(c_nb, points, eps)
+    if checked_nbs == None:
+        chked_nbs = np.zeros([0,2])
+    else:
+        chked_nbs = checked_nbs
     for nb in nbs:
+        checked = False
+        for chked in chked_nbs:
+            if np.array_equal(chked, nb):
+                checked = True
+        if checked:
+            continue
+        else:
+            chked_nbs = np.append(chked_nbs, np.array([nb]), axis=0)
+        print(c_nb, "'s nb ->", nb)
         added = False
         for ind_nb in ind_nbs:
             if np.array_equal(ind_nb, nb):
@@ -100,7 +113,7 @@ def indirect_reach(c_nb, d_nbs, ind_nbs, points, cores, eps):
             if np.array_equal(core, nb):
                 # core's nb
                 # print("detect", nb)
-                ind_nbs = np.append(ind_nbs, indirect_reach(nb, d_nbs, ind_nbs, points, cores, eps), axis=0)
+                ind_nbs = np.append(ind_nbs, indirect_reach(nb, d_nbs, ind_nbs, points, cores, eps, chked_nbs), axis=0)
                 break
     return ind_nbs
 
@@ -138,6 +151,7 @@ def main():
             if np.array_equal(core, r_nb):
                 # print("detect", r_nb)
                 r_nb_nbs = indirect_reach(r_nb, r_nbs, ind_nbs, points, cores, eps)
+                # print("add", r_nb_nbs)
                 added = False
                 for r_nb_nb in r_nb_nbs:
                     for ind_nb in ind_nbs:
