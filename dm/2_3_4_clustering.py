@@ -384,14 +384,14 @@ def main():
     # run k-means
     init_centroids_kmeans = np.array([[1.8, 2.3], [2.3, 1.4]])
     lambda_kmeans_mink = 3
-    # my_clusterers.k_means(init_centroids_kmeans)
+    my_clusterers.k_means(init_centroids_kmeans)
 
     # run hierarchical
-    # my_clusterers.hierarchical()
+    my_clusterers.hierarchical()
 
     # run som
     init_centroids_som = np.array([[1, 3.1], [2, 2.2], [1.5, 2.1], [3.1, 1.1]])
-    # my_clusterers.som(init_centroids_som)
+    my_clusterers.som(init_centroids_som)
 
 if __name__ == "__main__":
     main()
