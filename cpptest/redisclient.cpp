@@ -6,7 +6,7 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "hiredis.h"
+#include "hiredis/hiredis.h"
 
 #define redisCmd(context, ...) static_cast<redisReply*>(redisCommand(context, __VA_ARGS__))
 
